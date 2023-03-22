@@ -5,6 +5,7 @@ replace github.com/cockroachdb/pebble => /
 require (
 	github.com/DataDog/zstd v1.4.5
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2
+	github.com/aws/aws-sdk-go v1.44.226
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/cockroachdb/datadriven v1.0.2
 	github.com/cockroachdb/errors v1.8.1
@@ -35,6 +36,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
