@@ -1,4 +1,6 @@
 # Profiling artifacts.
+.idea
+.env
 cpu.*.prof
 heap.prof
 mutex.prof
