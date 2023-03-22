@@ -43,7 +43,13 @@ func main() {
 	}
 
 	baseFs := vfs.Default
-	db, err := pebble.Open("demo", &pebble.Options{
+	baseFs = vfs.WithLogging(baseFs, func(_fmt string, args ...interface{}) {
+		if strings.Contains(_fmt, "sync-data") {
+			return
+		}
+		fmt.Printf(_fmt+"\n", args...)
+	})
+	db, err := pebble.Open("/tmp/demo", &pebble.Options{
 		// FS: pAws.NewCloudFS(baseFs),
 		FS: baseFs,
 	})

@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"sort"
 	"sync/atomic"
@@ -108,6 +109,19 @@ type VersionEdit struct {
 	// found that there was no overlapping file at the higher level).
 	DeletedFiles map[DeletedFileEntry]*FileMetadata
 	NewFiles     []NewFileEntry
+}
+
+func (v *VersionEdit) DebugString(format base.FormatKey, verbose bool) string {
+	var b bytes.Buffer
+	_, _ = fmt.Fprintf(&b, "Start: ComparerName=%s MinUnflushedLogNum=%d ObsoletePrevLogNum=%d NextFileNum=%d LastSeqNum=%d \n", v.ComparerName, v.MinUnflushedLogNum, v.ObsoletePrevLogNum, v.NextFileNum, v.LastSeqNum)
+	for i, e := range v.NewFiles {
+		_, _ = fmt.Fprintf(&b, "Index=%d Entry=%s \n", i, e.Meta.DebugString(format, verbose))
+	}
+	for k, v := range v.DeletedFiles {
+		_, _ = fmt.Fprintf(&b, "Delete Files: Level=%d, FileNum=%d, Entry=%s \n", k.Level, k.FileNum, v.DebugString(format, verbose))
+	}
+	_, _ = fmt.Fprintf(&b, "End \n")
+	return b.String()
 }
 
 // Decode decodes an edit from the specified reader.

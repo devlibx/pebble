@@ -2018,6 +2018,7 @@ func (d *DB) flush1() (bytesFlushed uint64, err error) {
 				}
 			}
 		}
+		d.opts.Logger.Infof("compaction - mem-table to sst file: Info= %s", ve.DebugString(base.DefaultFormatter, true))
 		err = d.mu.versions.logAndApply(jobID, ve, c.metrics, false, /* forceRotation */
 			func() []compactionInfo { return d.getInProgressCompactionInfoLocked(c) })
 		if err != nil {
@@ -2517,6 +2518,7 @@ func (d *DB) compact1(c *compaction, errChannel chan error) (err error) {
 	info.Duration = d.timeNow().Sub(startTime)
 	if err == nil {
 		d.mu.versions.logLock()
+		d.opts.Logger.Infof("compaction - Major compaction: Info = %s", ve.DebugString(base.DefaultFormatter, true))
 		err = d.mu.versions.logAndApply(jobID, ve, c.metrics, false /* forceRotation */, func() []compactionInfo {
 			return d.getInProgressCompactionInfoLocked(c)
 		})
