@@ -1,5 +1,7 @@
 module github.com/cockroachdb/pebble
 
+replace github.com/cockroachdb/pebble => /
+
 require (
 	github.com/DataDog/zstd v1.4.5
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2
