@@ -5,13 +5,13 @@ on:
     branches:
     - master
     - crl-release-*
+    - cloud-work
   pull_request:
     branches:
     - master
     - crl-release-*
 
 jobs:
-
   linux:
     name: go-linux
     runs-on: ubuntu-latest
