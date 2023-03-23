@@ -22,7 +22,7 @@ func main() {
 		if strings.Contains(_fmt, "sync-data") {
 			return
 		}
-		fmt.Printf(_fmt+"\n", args...)
+		// fmt.Printf(_fmt+"\n", args...)
 	})
 	db, err := pebble.Open("/tmp/demo_"+id, &pebble.Options{
 		// FS: pAws.NewCloudFS(baseFs),

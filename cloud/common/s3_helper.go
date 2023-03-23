@@ -36,21 +36,28 @@ func (s *s3HelperImpl) SyncFileToS3(name string) error {
 	if err != nil {
 		return errors.Wrap(err, "field to open file to upload file: name=%s", name)
 	}
-	out, err := s.Upload(&s3manager.UploadInput{
+	if out, err := s.Upload(&s3manager.UploadInput{
 		Body:   bufio.NewReader(file),
 		Bucket: aws2.String(s.bucket),
 		Key:    aws2.String(s.filePrefix + "/" + name),
-	})
-	fmt.Println("Cloud file upload: name=", name, out)
-	return err
+	}); err == nil {
+		fmt.Println("Cloud file upload: name=", name, out)
+		return nil
+	} else {
+		return errors.Wrap(err, "Cloud file upload failed: name=%s", name)
+	}
 }
 
 func (s *s3HelperImpl) DeleteS3File(name string) error {
-	_, err := s.DeleteObject(&s3.DeleteObjectInput{
+	if _, err := s.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws2.String(s.bucket),
 		Key:    aws2.String(s.filePrefix + "/" + name),
-	})
-	return err
+	}); err == nil {
+		fmt.Println("Cloud file deleted: name=", name)
+		return nil
+	} else {
+		return errors.Wrap(err, "Cloud file deleted failed: name=%s", name)
+	}
 }
 
 func NewS3Helper(options CloudFsOption) (*s3HelperImpl, error) {
