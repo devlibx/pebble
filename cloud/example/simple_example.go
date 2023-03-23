@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/cockroachdb/pebble"
+	aws2 "github.com/cockroachdb/pebble/cloud/aws"
 	"github.com/cockroachdb/pebble/vfs"
 	"log"
 	"os"
@@ -43,6 +44,7 @@ func main() {
 	}
 
 	baseFs := vfs.Default
+	baseFs = aws2.NewCloudFS(baseFs)
 	baseFs = vfs.WithLogging(baseFs, func(_fmt string, args ...interface{}) {
 		if strings.Contains(_fmt, "sync-data") {
 			return
