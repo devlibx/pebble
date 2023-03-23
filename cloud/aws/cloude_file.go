@@ -1,48 +1,25 @@
 package aws
 
 import (
-	"bufio"
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/cockroachdb/pebble/cloud/common"
 	"github.com/cockroachdb/pebble/vfs"
 	"os"
 	"strings"
 )
 
 type CloudFile struct {
-	file vfs.File
-	name string
-	*s3manager.Uploader
-	options CloudFsOption
+	file     vfs.File
+	name     string
+	s3Helper S3Helper
+	options  common.CloudFsOption
 }
 
-func NewCloudFile(baseFile vfs.File, name string, options CloudFsOption) (vfs.File, error) {
-	sess, _ := session.NewSession(&aws.Config{
-		Region: aws.String("ap-south-1")},
-	)
-	uploader := s3manager.NewUploader(sess)
-
-	return &CloudFile{file: baseFile, name: name, Uploader: uploader, options: options}, nil
-}
-
-func (c *CloudFile) updateToS3(name string) error {
-	if SkipS3Upload(name) {
-		fmt.Println("Skipping file to S3: name=", name)
-		return nil
-	}
-	out, err := c.Upload(&s3manager.UploadInput{
-		Body:   bufio.NewReader(c.file),
-		Bucket: aws.String(os.Getenv("S3_BUCKET")),
-		Key:    aws.String(c.options.BasePath + "/" + name),
-	})
-	fmt.Println("Cloud file close: name=", name, out)
-	return err
+func NewCloudFile(baseFile vfs.File, name string, s3Helper S3Helper, options common.CloudFsOption) (vfs.File, error) {
+	return &CloudFile{file: baseFile, name: name, s3Helper: s3Helper, options: options}, nil
 }
 
 func (c *CloudFile) Close() error {
-	err := c.updateToS3(c.name)
+	err := c.s3Helper.SyncFileToS3(c.file, c.name)
 	err = c.file.Close()
 	return err
 }
@@ -69,21 +46,21 @@ func (c *CloudFile) Stat() (os.FileInfo, error) {
 
 func (c *CloudFile) Sync() error {
 	if strings.Contains(c.name, "MANIFEST") {
-		_ = c.updateToS3(c.name)
+		_ = c.s3Helper.SyncFileToS3(c.file, c.name)
 	}
 	return c.file.Sync()
 }
 
 func (c *CloudFile) SyncTo(length int64) (fullSync bool, err error) {
 	if strings.Contains(c.name, "MANIFEST") {
-		_ = c.updateToS3(c.name)
+		_ = c.s3Helper.SyncFileToS3(c.file, c.name)
 	}
 	return c.file.SyncTo(length)
 }
 
 func (c *CloudFile) SyncData() error {
 	if strings.Contains(c.name, "MANIFEST") {
-		_ = c.updateToS3(c.name)
+		_ = c.s3Helper.SyncFileToS3(c.file, c.name)
 	}
 	return c.file.SyncData()
 }

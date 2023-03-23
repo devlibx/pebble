@@ -10,6 +10,7 @@ require (
 	github.com/cockroachdb/datadriven v1.0.2
 	github.com/cockroachdb/errors v1.8.1
 	github.com/cockroachdb/redact v1.0.8
+	github.com/devlibx/gox-base v0.0.113
 	github.com/ghemawat/stream v0.0.0-20171120220530-696b145b53b9
 	github.com/golang/snappy v0.0.4
 	github.com/guptarohit/asciigraph v0.5.5

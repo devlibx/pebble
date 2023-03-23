@@ -1,30 +1,68 @@
 package aws
 
 import (
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/cockroachdb/pebble/cloud/common"
 	"github.com/cockroachdb/pebble/vfs"
+	"github.com/devlibx/gox-base/errors"
 	"io"
 	"os"
 )
 
-type CloudFS struct {
-	wrapperFs vfs.FS
-	options   CloudFsOption
-	s3Client  *s3.S3
+type S3Helper interface {
+	SyncFileToS3(file vfs.File, name string) error
+	DeleteS3File(name string) error
 }
 
-type CloudFsOption struct {
-	BasePath string
+type CloudFS struct {
+	wrapperFs vfs.FS
+	options   common.CloudFsOption
+	s3Helper  S3Helper
+}
+
+func NewCloudFS(fs vfs.FS, options common.CloudFsOption) (vfs.FS, error) {
+
+	s3Helper, err := common.NewS3Helper(options)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create S3 helper")
+	}
+
+	cfs := &CloudFS{
+		wrapperFs: fs,
+		options:   options,
+		s3Helper:  s3Helper,
+	}
+	return cfs, nil
 }
 
 func (c *CloudFS) Create(name string) (vfs.File, error) {
 	if f, err := c.wrapperFs.Create(name); err == nil {
-		return NewCloudFile(f, name, c.options)
+		return NewCloudFile(f, name, c.s3Helper, c.options)
 	} else {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create file: name=%s", name)
+	}
+}
+
+func (c *CloudFS) Remove(name string) error {
+	if err := c.s3Helper.DeleteS3File(name); err == nil {
+		return c.wrapperFs.Remove(name)
+	} else {
+		return errors.Wrap(err, "failed to delete S3 file: name=%s", name)
+	}
+}
+
+func (c *CloudFS) Rename(oldName, newName string) error {
+	if baseFile, err := c.wrapperFs.Create(oldName); err == nil {
+		if oldFile, err := NewCloudFile(baseFile, oldName, c.s3Helper, c.options); err == nil {
+			if err = c.s3Helper.SyncFileToS3(oldFile, newName); err == nil {
+				return c.wrapperFs.Rename(oldName, newName)
+			} else {
+				return errors.Wrap(err, "failed to sync file for rename to s3: oldName=%s, newName=%s", oldName, newName)
+			}
+		} else {
+			return errors.Wrap(err, "failed to create a cloud file to rename to s3: oldName=%s, newName=%s", oldName, newName)
+		}
+	} else {
+		return errors.Wrap(err, "failed to create a wrapper file to rename to s3: oldName=%s, newName=%s", oldName, newName)
 	}
 }
 
@@ -40,27 +78,8 @@ func (c *CloudFS) OpenDir(name string) (vfs.File, error) {
 	return c.wrapperFs.OpenDir(name)
 }
 
-func (c *CloudFS) Remove(name string) error {
-	if out, err := c.s3Client.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(os.Getenv("S3_BUCKET")),
-		Key:    aws.String(c.options.BasePath + "/" + name),
-	}); err == nil {
-		fmt.Println("Delete S3 file", out)
-	}
-	return c.wrapperFs.Remove(name)
-}
-
 func (c *CloudFS) RemoveAll(name string) error {
 	return c.wrapperFs.RemoveAll(name)
-}
-
-func (c *CloudFS) Rename(oldname, newname string) error {
-	if baseFile, err := c.wrapperFs.Create(oldname); err == nil {
-		if oldFile, err := NewCloudFile(baseFile, oldname, c.options); err == nil {
-			(oldFile.(*CloudFile)).updateToS3(newname)
-		}
-	}
-	return c.wrapperFs.Rename(oldname, newname)
 }
 
 func (c *CloudFS) ReuseForWrite(oldname, newname string) (vfs.File, error) {
@@ -97,17 +116,4 @@ func (c *CloudFS) PathDir(path string) string {
 
 func (c *CloudFS) GetDiskUsage(path string) (vfs.DiskUsage, error) {
 	return c.wrapperFs.GetDiskUsage(path)
-}
-
-func NewCloudFS(fs vfs.FS, options CloudFsOption) vfs.FS {
-	sess, _ := session.NewSession(&aws.Config{
-		Region: aws.String("ap-south-1")},
-	)
-
-	cfs := &CloudFS{
-		wrapperFs: fs,
-		options:   options,
-		s3Client:  s3.New(sess),
-	}
-	return cfs
 }
