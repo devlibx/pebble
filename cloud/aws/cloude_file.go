@@ -19,7 +19,7 @@ func NewCloudFile(baseFile vfs.File, name string, s3Helper S3Helper, options com
 }
 
 func (c *CloudFile) Close() error {
-	err := c.s3Helper.SyncFileToS3(c.file, c.name)
+	err := c.s3Helper.SyncFileToS3(c.name)
 	err = c.file.Close()
 	return err
 }
@@ -46,21 +46,21 @@ func (c *CloudFile) Stat() (os.FileInfo, error) {
 
 func (c *CloudFile) Sync() error {
 	if strings.Contains(c.name, "MANIFEST") {
-		_ = c.s3Helper.SyncFileToS3(c.file, c.name)
+		_ = c.s3Helper.SyncFileToS3(c.name)
 	}
 	return c.file.Sync()
 }
 
 func (c *CloudFile) SyncTo(length int64) (fullSync bool, err error) {
 	if strings.Contains(c.name, "MANIFEST") {
-		_ = c.s3Helper.SyncFileToS3(c.file, c.name)
+		_ = c.s3Helper.SyncFileToS3(c.name)
 	}
 	return c.file.SyncTo(length)
 }
 
 func (c *CloudFile) SyncData() error {
 	if strings.Contains(c.name, "MANIFEST") {
-		_ = c.s3Helper.SyncFileToS3(c.file, c.name)
+		_ = c.s3Helper.SyncFileToS3(c.name)
 	}
 	return c.file.SyncData()
 }

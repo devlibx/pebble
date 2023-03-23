@@ -9,7 +9,7 @@ import (
 )
 
 type S3Helper interface {
-	SyncFileToS3(file vfs.File, name string) error
+	SyncFileToS3(name string) error
 	DeleteS3File(name string) error
 }
 
@@ -51,18 +51,14 @@ func (c *CloudFS) Remove(name string) error {
 }
 
 func (c *CloudFS) Rename(oldName, newName string) error {
-	if baseFile, err := c.wrapperFs.Create(oldName); err == nil {
-		if oldFile, err := NewCloudFile(baseFile, oldName, c.s3Helper, c.options); err == nil {
-			if err = c.s3Helper.SyncFileToS3(oldFile, newName); err == nil {
-				return c.wrapperFs.Rename(oldName, newName)
-			} else {
-				return errors.Wrap(err, "failed to sync file for rename to s3: oldName=%s, newName=%s", oldName, newName)
-			}
+	if err := c.wrapperFs.Rename(oldName, newName); err == nil {
+		if err := c.s3Helper.SyncFileToS3(newName); err == nil {
+			return nil
 		} else {
-			return errors.Wrap(err, "failed to create a cloud file to rename to s3: oldName=%s, newName=%s", oldName, newName)
+			return errors.Wrap(err, "failed to sync file for rename to s3: oldName=%s, newName=%s", oldName, newName)
 		}
 	} else {
-		return errors.Wrap(err, "failed to create a wrapper file to rename to s3: oldName=%s, newName=%s", oldName, newName)
+		return err
 	}
 }
 

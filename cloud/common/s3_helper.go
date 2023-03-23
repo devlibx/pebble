@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/cockroachdb/pebble/vfs"
+	"github.com/devlibx/gox-base/errors"
 	"os"
 	"strings"
 )
@@ -28,16 +28,20 @@ func (s *s3HelperImpl) skipS3Upload(name string) bool {
 	return false
 }
 
-func (s *s3HelperImpl) SyncFileToS3(file vfs.File, name string) error {
+func (s *s3HelperImpl) SyncFileToS3(name string) error {
 	if s.skipS3Upload(name) {
 		return nil
+	}
+	file, err := os.Open(name)
+	if err != nil {
+		return errors.Wrap(err, "field to open file to upload file: name=%s", name)
 	}
 	out, err := s.Upload(&s3manager.UploadInput{
 		Body:   bufio.NewReader(file),
 		Bucket: aws2.String(s.bucket),
 		Key:    aws2.String(s.filePrefix + "/" + name),
 	})
-	fmt.Println("Cloud file close: name=", name, out)
+	fmt.Println("Cloud file upload: name=", name, out)
 	return err
 }
 

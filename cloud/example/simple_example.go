@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	id := "6"
+	id := "10"
 
 	baseFs := vfs.Default
 	baseFs, err := aws2.NewCloudFS(baseFs, common.CloudFsOption{BasePath: "project_" + id})
