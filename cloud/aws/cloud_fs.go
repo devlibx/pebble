@@ -1,6 +1,10 @@
 package aws
 
 import (
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/cockroachdb/pebble/vfs"
 	"io"
 	"os"
@@ -9,6 +13,7 @@ import (
 type CloudFS struct {
 	wrapperFs vfs.FS
 	options   CloudFsOption
+	s3Client  *s3.S3
 }
 
 type CloudFsOption struct {
@@ -36,6 +41,12 @@ func (c *CloudFS) OpenDir(name string) (vfs.File, error) {
 }
 
 func (c *CloudFS) Remove(name string) error {
+	if out, err := c.s3Client.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(os.Getenv("S3_BUCKET")),
+		Key:    aws.String(c.options.BasePath + "/" + name),
+	}); err == nil {
+		fmt.Println("Delete S3 file", out)
+	}
 	return c.wrapperFs.Remove(name)
 }
 
@@ -89,9 +100,14 @@ func (c *CloudFS) GetDiskUsage(path string) (vfs.DiskUsage, error) {
 }
 
 func NewCloudFS(fs vfs.FS, options CloudFsOption) vfs.FS {
+	sess, _ := session.NewSession(&aws.Config{
+		Region: aws.String("ap-south-1")},
+	)
+
 	cfs := &CloudFS{
 		wrapperFs: fs,
 		options:   options,
+		s3Client:  s3.New(sess),
 	}
 	return cfs
 }
