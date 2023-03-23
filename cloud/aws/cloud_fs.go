@@ -44,6 +44,11 @@ func (c *CloudFS) RemoveAll(name string) error {
 }
 
 func (c *CloudFS) Rename(oldname, newname string) error {
+	if baseFile, err := c.wrapperFs.Create(oldname); err == nil {
+		if oldFile, err := NewCloudFile(baseFile, oldname, c.options); err == nil {
+			(oldFile.(*CloudFile)).updateToS3(newname)
+		}
+	}
 	return c.wrapperFs.Rename(oldname, newname)
 }
 

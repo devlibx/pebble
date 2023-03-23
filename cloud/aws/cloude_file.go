@@ -27,18 +27,22 @@ func NewCloudFile(baseFile vfs.File, name string, options CloudFsOption) (vfs.Fi
 	return &CloudFile{file: baseFile, name: name, Uploader: uploader, options: options}, nil
 }
 
-func (c *CloudFile) updateToS3() error {
+func (c *CloudFile) updateToS3(name string) error {
+	if SkipS3Upload(name) {
+		fmt.Println("Skipping file to S3: name=", name)
+		return nil
+	}
 	out, err := c.Upload(&s3manager.UploadInput{
 		Body:   bufio.NewReader(c.file),
 		Bucket: aws.String(os.Getenv("S3_BUCKET")),
-		Key:    aws.String(c.options.BasePath + "/" + c.name),
+		Key:    aws.String(c.options.BasePath + "/" + name),
 	})
-	fmt.Println("Cloud file close: name=", c.name, out)
+	fmt.Println("Cloud file close: name=", name, out)
 	return err
 }
 
 func (c *CloudFile) Close() error {
-	err := c.updateToS3()
+	err := c.updateToS3(c.name)
 	err = c.file.Close()
 	return err
 }
@@ -65,21 +69,21 @@ func (c *CloudFile) Stat() (os.FileInfo, error) {
 
 func (c *CloudFile) Sync() error {
 	if strings.Contains(c.name, "MANIFEST") {
-		_ = c.updateToS3()
+		_ = c.updateToS3(c.name)
 	}
 	return c.file.Sync()
 }
 
 func (c *CloudFile) SyncTo(length int64) (fullSync bool, err error) {
 	if strings.Contains(c.name, "MANIFEST") {
-		_ = c.updateToS3()
+		_ = c.updateToS3(c.name)
 	}
 	return c.file.SyncTo(length)
 }
 
 func (c *CloudFile) SyncData() error {
 	if strings.Contains(c.name, "MANIFEST") {
-		_ = c.updateToS3()
+		_ = c.updateToS3(c.name)
 	}
 	return c.file.SyncData()
 }
