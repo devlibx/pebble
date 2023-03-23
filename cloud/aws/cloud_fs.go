@@ -8,10 +8,19 @@ import (
 
 type CloudFS struct {
 	wrapperFs vfs.FS
+	options   CloudFsOption
+}
+
+type CloudFsOption struct {
+	BasePath string
 }
 
 func (c *CloudFS) Create(name string) (vfs.File, error) {
-	return c.wrapperFs.Create(name)
+	if f, err := c.wrapperFs.Create(name); err == nil {
+		return NewCloudFile(f, name, c.options)
+	} else {
+		return nil, err
+	}
 }
 
 func (c *CloudFS) Link(oldname, newname string) error {
@@ -74,9 +83,10 @@ func (c *CloudFS) GetDiskUsage(path string) (vfs.DiskUsage, error) {
 	return c.wrapperFs.GetDiskUsage(path)
 }
 
-func NewCloudFS(fs vfs.FS) vfs.FS {
+func NewCloudFS(fs vfs.FS, options CloudFsOption) vfs.FS {
 	cfs := &CloudFS{
 		wrapperFs: fs,
+		options:   options,
 	}
 	return cfs
 }
