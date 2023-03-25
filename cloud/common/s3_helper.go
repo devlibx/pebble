@@ -10,6 +10,7 @@ import (
 	"github.com/devlibx/gox-base/errors"
 	"os"
 	"strings"
+	"time"
 )
 
 type s3HelperImpl struct {
@@ -17,6 +18,17 @@ type s3HelperImpl struct {
 	filePrefix string
 	*s3manager.Uploader
 	*s3.S3
+}
+
+func (s *s3HelperImpl) deleteSstFileAsync(name string) {
+	if strings.HasSuffix(name, ".sst") {
+		go func() {
+			time.Sleep(2 * time.Second)
+			if err := os.Remove(name); err == nil {
+				fmt.Println("Delete SST file from local: name=", name)
+			}
+		}()
+	}
 }
 
 func (s *s3HelperImpl) skipS3Upload(name string) bool {

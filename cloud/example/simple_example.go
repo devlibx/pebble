@@ -8,10 +8,11 @@ import (
 	"github.com/cockroachdb/pebble/vfs"
 	"log"
 	"strings"
+	"time"
 )
 
 func main() {
-	id := "10"
+	id := "12"
 
 	baseFs := vfs.Default
 	baseFs, err := aws2.NewCloudFS(baseFs, common.CloudFsOption{BasePath: "project_" + id})
@@ -31,6 +32,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	go func() {
+		for i := 0; i < 10000000; i++ {
+			key := []byte(fmt.Sprintf("hello_%d", i))
+			if _, _, err := db.Get(key); err == nil {
+				fmt.Println("Data for Key=", string(key))
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	}()
 
 	key := []byte("")
 	data := strings.Repeat("world", 10000)

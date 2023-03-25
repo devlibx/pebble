@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"fmt"
 	"github.com/cockroachdb/pebble/cloud/common"
 	"github.com/cockroachdb/pebble/vfs"
 	"os"
@@ -26,12 +25,11 @@ func (c *CloudFile) Close() error {
 }
 
 func (c *CloudFile) Read(p []byte) (n int, err error) {
-	fmt.Println("Read called for full file")
 	return c.file.Read(p)
 }
 
 func (c *CloudFile) ReadAt(p []byte, off int64) (n int, err error) {
-	fmt.Println("Read called for full file at offset = ", off)
+	// fmt.Println("Read called for full file at offset = ", off)
 	return c.file.ReadAt(p, off)
 }
 

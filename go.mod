@@ -13,6 +13,7 @@ require (
 	github.com/devlibx/gox-base v0.0.113
 	github.com/ghemawat/stream v0.0.0-20171120220530-696b145b53b9
 	github.com/golang/snappy v0.0.4
+	github.com/google/uuid v1.2.0
 	github.com/guptarohit/asciigraph v0.5.5
 	github.com/klauspost/compress v1.15.15
 	github.com/kr/pretty v0.2.1

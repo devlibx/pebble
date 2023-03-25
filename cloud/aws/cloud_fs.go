@@ -1,11 +1,16 @@
 package aws
 
 import (
+	"fmt"
+	errors2 "github.com/cockroachdb/errors"
 	"github.com/cockroachdb/pebble/cloud/common"
 	"github.com/cockroachdb/pebble/vfs"
 	"github.com/devlibx/gox-base/errors"
 	"io"
+	"io/fs"
 	"os"
+	"strings"
+	"syscall"
 )
 
 type S3Helper interface {
@@ -67,7 +72,19 @@ func (c *CloudFS) Link(oldname, newname string) error {
 }
 
 func (c *CloudFS) Open(name string, opts ...vfs.OpenOption) (vfs.File, error) {
-	return c.wrapperFs.Open(name, opts...)
+	if f, err := c.wrapperFs.Open(name, opts...); err == nil {
+		return NewCloudFile(f, name, c.s3Helper, c.options)
+	} else {
+		if strings.HasSuffix(name, "CURRENT") {
+			return nil, err
+		}
+		var er = &fs.PathError{}
+		if errors2.As(err, &er) && er.Err == syscall.ENOENT {
+			return NewCloudFileProxy(name, c.s3Helper, c.options)
+		} else {
+			return nil, err
+		}
+	}
 }
 
 func (c *CloudFS) OpenDir(name string) (vfs.File, error) {
@@ -91,6 +108,7 @@ func (c *CloudFS) Lock(name string) (io.Closer, error) {
 }
 
 func (c *CloudFS) List(dir string) ([]string, error) {
+	fmt.Println("CloudFs List called - dir=", dir)
 	return c.wrapperFs.List(dir)
 }
 
